@@ -1,0 +1,11 @@
+newmtl orange
+Kd 0.92 0.27 0.02
+newmtl dark
+Kd 0.045 0.05 0.055
+newmtl metal
+Kd 0.3 0.32 0.33
+newmtl reflective
+Kd 0.85 0.85 0.7
+newmtl red
+Kd 0.55 0.01 0.01
+Ke 0.22 0 0

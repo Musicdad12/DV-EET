@@ -1,0 +1,11 @@
+{
+  "Name": "DV_EET",
+  "Description": "End-of-train marker device with a red flashing light.",
+  "Amount": 2,
+  "Price": 25000,
+  "AssetBundleName": "dv_eet_assets",
+  "PrefabPath": "assets/dv_eet_generated/dv_eet.prefab",
+  "IconStandardPath": "assets/dv_eet_generated/eet_icon.png",
+  "IconDroppedPath": "assets/dv_eet_generated/eet_dropped.png",
+  "ShelfBounds": { "x": 0.35, "y": 0.48, "z": 0.20 }
+}

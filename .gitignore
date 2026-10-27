@@ -1,0 +1,11 @@
+# Build output and Unity-generated files
+[Ss]ource/*.dll
+[Dd]ist/
+UnityProject/Library/
+UnityProject/Temp/
+UnityProject/Logs/
+UnityProject/Obj/
+UnityProject/Build/
+UnityProject/UserSettings/
+*.csproj.user
+*.sln.user

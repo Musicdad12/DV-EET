@@ -1,0 +1,16 @@
+{
+    "Id":  "DV_EET",
+    "DisplayName":  "DV EET",
+    "Version":  "1.0.0",
+    "Author":  "DV_EET project",
+    "EntryMethod":  "DV_EET.Main.Load",
+    "AssemblyName":  "DV_EET.dll",
+    "Requirements":  [
+                         "custom_item_mod"
+                     ],
+    "LoadAfter":  [
+                      "custom_item_mod"
+                  ],
+    "HomePage":  "https://github.com/Musicdad12/DV-EET",
+    "Repository":  "https://raw.githubusercontent.com/Musicdad12/DV-EET/main/repository.json"
+}
