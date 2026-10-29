@@ -1,7 +1,7 @@
 {
     "Id":  "DV_EET",
-    "DisplayName":  "DV EET",
-    "Version":  "1.0.0",
+    "DisplayName":  "DV EOTD",
+    "Version":  "1.1.1",
     "Author":  "DV_EET project",
     "EntryMethod":  "DV_EET.Main.Load",
     "AssemblyName":  "DV_EET.dll",

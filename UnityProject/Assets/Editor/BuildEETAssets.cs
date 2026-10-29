@@ -14,6 +14,7 @@ public static class BuildEETAssets
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
         Build();
+        EetAppearanceValidation.Validate();
         Debug.Log("DV_EET VR asset build completed: VR enabled, single-pass stereo, OpenVR, linear color.");
     }
     [MenuItem("DV_EET/Build Windows Assets")]
@@ -28,7 +29,7 @@ public static class BuildEETAssets
         instance.name = "DV_EET";
         var collider = instance.AddComponent<BoxCollider>();
         collider.center = new Vector3(0f, 0.23f, 0f);
-        collider.size = new Vector3(0.32f, 0.47f, 0.19f);
+        collider.size = new Vector3(0.22f, 0.47f, 0.19f);
         // The runtime mod must supply the interaction and power-state logic.
         var lightObject = new GameObject("EET_RedLight");
         lightObject.transform.SetParent(instance.transform, false);
@@ -80,14 +81,14 @@ public static class BuildEETAssets
         var red = dropped ? body : new Color(.8f,.015f,.015f);
         for (int y=0;y<n;y++) for(int x=0;x<n;x++) {
             Color c=clear;
-            if(x>=53 && x<203 && y>=24 && y<183) c=body;
-            if(x>=47 && x<209 && y>=24 && y<47) c=dark;
-            if(x>=54 && x<202 && y>=174 && y<191) c=dark;
-            if((x>=77 && x<89 || x>=167 && x<179) && y>=187 && y<219) c=dark;
-            if(x>=77 && x<179 && y>=214 && y<227) c=dark;
-            int dx=x-128,dy=y-125,rr=dx*dx+dy*dy;
-            if(rr<41*41)c=dark;
-            if(rr<33*33)c=red;
+            if(x>=91 && x<165 && y>=51 && y<209) c=body;
+            if(x>=84 && x<172 && y>=200 && y<213) c=body;
+            if(x>=98 && x<158 && y>=24 && y<51) c=dark;
+            if(x>=120 && x<136 && y>=213 && y<231) c=dark;
+            if(x>=82 && x<174 && y>=150 && y<195) c=body;
+            if(x>=96 && x<160 && y>=160 && y<186) c=red;
+            if(x>=100 && x<156 && y>=75 && y<132) c=red;
+            if(x>=165 && x<189 && y>=108 && y<114) c=dark;
             t.SetPixel(x,y,c);
         }
         t.Apply(); File.WriteAllBytes(path,t.EncodeToPNG()); Object.DestroyImmediate(t);

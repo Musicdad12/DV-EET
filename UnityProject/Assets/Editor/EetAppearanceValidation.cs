@@ -19,21 +19,17 @@ public static class EetAppearanceValidation
             if (!prefab) throw new Exception("Item prefab missing");
             item = UnityEngine.Object.Instantiate(prefab);
             EetModel.Replace(item);
-            var mesh = item.GetComponentInChildren<MeshFilter>();
-            var mats = mesh.GetComponent<MeshRenderer>().sharedMaterials;
-            if (mats.Length != 4 || mats[0].name != "DV_EET_WeatheredSafetyYellow" || mats[1].name != "DV_EET_Chrome") throw new Exception("Incorrect material assignments");
-            if (mesh.sharedMesh.uv.Length != mesh.sharedMesh.vertexCount) throw new Exception("Missing casing UV coordinates");
-            if (!mats[0].mainTexture || mats[0].mainTexture.name != "DV_EET_WeatheredYellow") throw new Exception("Weathering texture missing");
-            if (!mats[1].HasProperty("_Metallic") || mats[1].GetFloat("_Metallic") < .8f) throw new Exception("Chrome metallic setting missing");
-            bool foundLooseLever = false;
-            foreach (var r in item.GetComponentsInChildren<Renderer>(true))
-                if (r.name == "EET_LooseToggleLever") { foundLooseLever = true; if (r.sharedMaterial != mats[1]) throw new Exception("Loose toggle is not chrome"); }
-            if (!foundLooseLever) throw new Exception("Loose toggle lever missing");
-            if (mats[3].name != "DV_EET_BrandedPanel" || !mats[3].mainTexture || mats[3].mainTexture.name != "DV_EET_DerailValleyGadgets_Label") throw new Exception("Panel lettering texture missing");
-            var panelUV = mesh.sharedMesh.uv;
-            if (panelUV[56].x < .99f || panelUV[57].x > .01f || panelUV[58].y < .99f) throw new Exception("Panel UV mapping incorrect");
-            var texture = mats[0].mainTexture as Texture2D;
-            if (texture.GetPixel(24,32) == texture.GetPixel(80,200)) throw new Exception("Weather texture lacks variation");
+            var casing = item.transform.Find("EET_Case");
+            var basePart = item.transform.Find("EET_Base");
+            var label = item.transform.Find("EET_Label");
+            if (!casing || !basePart || !label || !item.transform.Find("EET_RedLens")) throw new Exception("Remodeled parts missing");
+            var yellow = casing.GetComponent<Renderer>().sharedMaterial;
+            var chrome = basePart.GetComponent<Renderer>().sharedMaterial;
+            if (yellow.name != "DV_EET_WeatheredSafetyYellow" || !yellow.mainTexture) throw new Exception("Weathered yellow missing");
+            if (chrome.name != "DV_EET_Chrome" || !chrome.HasProperty("_Metallic") || chrome.GetFloat("_Metallic") < .8f) throw new Exception("Chrome missing");
+            if (label.GetComponent<Renderer>().sharedMaterial.name != "DV_EET_BrandedPanel") throw new Exception("Brand label missing");
+            var lever = item.transform.Find("EET_LooseToggleRoot/EET_LooseTogglePivot/EET_LooseToggleLever");
+            if (!lever || lever.GetComponent<Renderer>().sharedMaterial != chrome) throw new Exception("Chrome switch missing");
             camGo = new GameObject("EET Validation Camera"); var cam = camGo.AddComponent<Camera>();
             cam.transform.position = new Vector3(.65f,.40f,-1.15f); cam.transform.LookAt(new Vector3(0,.22f,0));
             cam.clearFlags = CameraClearFlags.SolidColor; cam.backgroundColor = new Color(.18f,.2f,.22f);

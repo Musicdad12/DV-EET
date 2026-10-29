@@ -8,8 +8,8 @@ using HarmonyLib;
 using UnityEngine;
 using UnityModManagerNet;
 
-[assembly: AssemblyVersion("1.0.0.0")]
-[assembly: AssemblyFileVersion("1.0.0.0")]
+[assembly: AssemblyVersion("1.1.1.0")]
+[assembly: AssemblyFileVersion("1.1.1.0")]
 
 namespace DV_EET
 {
@@ -47,15 +47,23 @@ namespace DV_EET
         internal static void Reset() { foreach (var root in roots) if (root != null) UnityEngine.Object.Destroy(root); roots.Clear(); }
         static MethodBase TargetMethod() { return AccessTools.Method(typeof(DV.Shops.GlobalShopController), "Awake"); }
         [HarmonyPrefix, HarmonyPriority(200), HarmonyAfter("custom_item_mod")]
-        static void Prefix()
+        static void Prefix(DV.Shops.GlobalShopController __instance)
         {
             foreach (var item in ItemModsFinder.CustomItems)
             {
                 // Keep the original prefab identity so purchased items and saved
                 // gadgets continue to resolve; only the localized display name changes.
                 if (item.ItemSpec.ItemPrefabName != "custom_item_mod/DV_EET/prefab") continue;
-                item.Name = "DV EET";
-                try { AdjustShelf(item); Setup(item.ItemPrefab); }
+                item.Name = "DV EOTD";
+                var harbor = __instance.globalShopList.FirstOrDefault(shop => shop != null && shop.name == "[ItemShop] Harbor");
+                item.ShopData.soldOnlyAt = new System.Collections.Generic.List<Shop> { harbor };
+                if (harbor == null) Main.Entry.Logger.Warning("DV_EET: Harbor shop not found; item will not be stocked anywhere");
+                try
+                {
+                    var standard = Shader.Find("Standard");
+                    Main.Entry.Logger.Log("DV_EET: game Standard shader " + (standard == null ? "not found" : (standard.name + ", supported=" + standard.isSupported)));
+                    AdjustShelf(item); Setup(item.ItemPrefab);
+                }
                 catch (Exception e) { Main.Entry.Logger.LogException("DV_EET attachment setup failed", e); }
             }
         }
@@ -100,7 +108,7 @@ namespace DV_EET
             };
             Set(gadget, "requirements", requirements);
             Set(gadget, "boundsCenter", new Vector3(0f, 0.23f, 0f));
-            Set(gadget, "boundsSize", new Vector3(.32f, .47f, .19f));
+            Set(gadget, "boundsSize", new Vector3(.22f, .47f, .19f));
             var visual = new GameObject("DV_EET_Visual");
             visual.transform.SetParent(root.transform, false);
             // The game maps gadget +Z into the surface; the model back is +Z.
@@ -127,7 +135,7 @@ namespace DV_EET
             }
             Set(gadget, "highlightMeshes", highlights.ToArray());
             var collider = visual.AddComponent<BoxCollider>();
-            collider.center = new Vector3(0f,.23f,0f); collider.size = new Vector3(.32f,.47f,.19f);
+            collider.center = new Vector3(0f,.23f,0f); collider.size = new Vector3(.22f,.47f,.19f);
             var layer = LayerMask.NameToLayer("Interactable");
             if (layer >= 0) SetLayer(root, layer);
             Set(item.AddComponent<GadgetItem>(), "gadgetPrefab", gadget);

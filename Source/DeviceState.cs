@@ -38,7 +38,6 @@ namespace DV_EET
         GadgetBase gadget;
         Light lamp;
         Material lensMaterial;
-        Material switchMaterial;
         Transform toggleLever;
         VRTK_InteractableObject_DV vrSwitch;
         GameObject arrow;
@@ -59,7 +58,7 @@ namespace DV_EET
             // Gadget's visual child holds the original model coordinates.
             var visual = transform.Find("DV_EET_Visual");
             if (visual != null) holder.transform.SetParent(visual, false);
-            holder.transform.localPosition = new Vector3(0f, .25f, -.105f);
+            holder.transform.localPosition = new Vector3(0f, .325f, -.11f);
             holder.transform.localRotation = Quaternion.Euler(0, 180, 0);
             lamp = holder.AddComponent<Light>(); lamp.type = LightType.Spot;
             lamp.color = Color.red; lamp.range = 18f; lamp.spotAngle = 85f; lamp.intensity = 2f;
@@ -90,7 +89,7 @@ namespace DV_EET
             var parent = visual != null ? visual : transform;
             var switchObject = new GameObject("EET_ToggleSwitch");
             switchObject.transform.SetParent(parent, false);
-            switchObject.transform.localPosition = new Vector3(.135f, .19f, 0f);
+            switchObject.transform.localPosition = new Vector3(.092f, .23f, 0f);
             int layer = LayerMask.NameToLayer("Interactable");
             if (layer >= 0) switchObject.layer = layer;
             var areaObject = new GameObject("EET_ToggleInteractionArea");
@@ -124,34 +123,9 @@ namespace DV_EET
                 vrSwitch.InteractableObjectUsed += OnVrSwitchUsed;
             }
 
-            // The lever pivots up for on and down for off. It is visual only;
-            // the interaction trigger above has no impact on the removal collider.
-            // A short mounting block bridges the side of the case to the pivot.
-            var baseObject = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            baseObject.name = "EET_ToggleMount";
-            baseObject.transform.SetParent(switchObject.transform, false);
-            baseObject.transform.localPosition = new Vector3(-.007f, 0f, 0f);
-            baseObject.transform.localScale = new Vector3(.016f, .035f, .035f);
-            var baseCollider = baseObject.GetComponent<Collider>();
-            if (baseCollider != null) Destroy(baseCollider);
-            if (layer >= 0) baseObject.layer = layer;
-            var pivot = new GameObject("EET_ToggleLeverPivot");
-            pivot.transform.SetParent(switchObject.transform, false);
-            toggleLever = pivot.transform;
-            var lever = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            lever.name = "EET_ToggleLever";
-            lever.transform.SetParent(toggleLever, false);
-            lever.transform.localPosition = new Vector3(0f, .025f, 0f);
-            lever.transform.localScale = new Vector3(.012f, .025f, .012f);
-            var leverCollider = lever.GetComponent<Collider>();
-            if (leverCollider != null) Destroy(leverCollider);
-            if (layer >= 0) lever.layer = layer;
-            if (EetModel.Chrome != null)
-            {
-                switchMaterial = new Material(EetModel.Chrome);
-                lever.GetComponent<Renderer>().sharedMaterial = switchMaterial;
-                baseObject.GetComponent<Renderer>().sharedMaterial = switchMaterial;
-            }
+            // Chrome lever with round mounting collar; up is on and down is off.
+            EetModel.AddToggleAppearance(switchObject, false);
+            toggleLever = switchObject.transform.Find("EET_ToggleLeverPivot");
         }
         void OnVrSwitchUsed(object sender, InteractableObjectEventArgs args)
         {
@@ -175,7 +149,7 @@ namespace DV_EET
             var item = gadget != null ? gadget.GadgetItem : null;
             var power = item != null ? item.GetComponent<EetPowerState>() : null;
             bool active = power != null && power.IsOn && gadget.TrainCar != null;
-            if (toggleLever != null) toggleLever.localRotation = Quaternion.Euler(0f, 0f, active ? 0f : 180f);
+            if (toggleLever != null) toggleLever.localRotation = Quaternion.Euler(0f, 0f, active ? 35f : -35f);
             bool lit = active && Mathf.Repeat(Time.time, 1f) < .35f;
             if (lamp != null) lamp.enabled = lit;
             if (lensMaterial != null)
@@ -232,7 +206,7 @@ namespace DV_EET
             arrow = null; arrowMesh = null; arrowMaterial = null;
         }
         void OnDisable() { if (lamp != null) lamp.enabled = false; if (lensMaterial != null) { if (lensMaterial.HasProperty("_Color")) lensMaterial.color = new Color(.27f, .002f, .002f); if (lensMaterial.HasProperty("_EmissionColor")) lensMaterial.SetColor("_EmissionColor", Color.black); } HideMarker(); hasLast = false; }
-        void OnDestroy() { if (vrSwitch != null) vrSwitch.InteractableObjectUsed -= OnVrSwitchUsed; HideMarker(); if (lensMaterial != null) Destroy(lensMaterial); if (switchMaterial != null) Destroy(switchMaterial); }
+        void OnDestroy() { if (vrSwitch != null) vrSwitch.InteractableObjectUsed -= OnVrSwitchUsed; HideMarker(); if (lensMaterial != null) Destroy(lensMaterial); }
     }
 }
 

@@ -1,6 +1,6 @@
-# DV EET
+# DV EOTD
 
-A Derail Valley end-of-train device with a flashing red light and a directional world-map marker. The player attaches it to a vehicle using the gadget system; no mounting plate is required. It can be purchased for a base price of 25,000 (career settings may change the final price).
+A Harbor-exclusive Derail Valley end-of-train device with a flashing red light and a directional world-map marker. The player attaches it to a vehicle using the gadget system; no mounting plate is required. It can be purchased for a base price of 25,000 (career settings may change the final price).
 
 ## Requirements and installation
 
@@ -17,7 +17,7 @@ Install Unity Mod Manager and custom_item_mod, then install the DV_EET release Z
 
 `Prepare-Release.ps1 -GitHubOwner <account>` builds the DLL, configures the Unity Mod Manager repository and home-page URLs, writes `repository.json`, and prepares a ZIP under `dist`. The repository must be public for unauthenticated update checks. Copy the generated ZIP into the repository's `Releases` folder and commit it together with the updated metadata. Increment the version and repeat these steps for later releases. Update notifications require the user to install a package containing the correct `Repository` URL; creating a GitHub repository alone does not update an existing installation. Unity Mod Manager reports available updates; installation behavior depends on its version.
 
-The item displays as `DV EET` while retaining the earlier `custom_item_mod/DV_EET/prefab` identifier for existing saves.
+The item displays as `DV EOTD` while retaining the earlier `custom_item_mod/DV_EET/prefab` identifier for existing saves.
 
 ## Credits
 

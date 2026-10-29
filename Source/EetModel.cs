@@ -9,6 +9,7 @@ namespace DV_EET
         static Mesh body;
         static Mesh lens;
         static Material yellowMaterial;
+        static Material reflectorMaterial;
         internal static Material Chrome { get; private set; }
         static Texture2D weatherTexture;
         static Material labelMaterial;
@@ -556,6 +557,20 @@ namespace DV_EET
             lens.vertices = Vertices; lens.triangles = Faces[4];
             lens.RecalculateNormals(); lens.RecalculateBounds();
         }
+        // Resolve a shader from the running game rather than relying on a
+        // serialized bundle shader, which may render magenta in the player.
+        static Material CompatibleMaterial(Material source)
+        {
+            var result = new Material(source);
+            var gameShader = Shader.Find("Standard");
+            if (gameShader != null && gameShader.isSupported) result.shader = gameShader;
+            else if (result.shader == null || !result.shader.isSupported)
+            {
+                var fallback = Shader.Find("Unlit/Texture");
+                if (fallback != null && fallback.isSupported) result.shader = fallback;
+            }
+            return result;
+        }
         static void EnsureMaterials(Material[] original)
         {
             if (yellowMaterial != null && Chrome != null) return;
@@ -580,7 +595,7 @@ namespace DV_EET
                 pixels[y * size + x] = c;
             }
             weatherTexture.SetPixels32(pixels); weatherTexture.Apply(true, false);
-            yellowMaterial = new Material(original[0]);
+            yellowMaterial = CompatibleMaterial(original[0]);
             yellowMaterial.name = "DV_EET_WeatheredSafetyYellow";
             if (yellowMaterial.HasProperty("_Color")) yellowMaterial.color = Color.white;
             if (yellowMaterial.HasProperty("_MainTex")) yellowMaterial.mainTexture = weatherTexture;
@@ -591,69 +606,84 @@ namespace DV_EET
             if (!ImageConversion.LoadImage(labelTexture, Convert.FromBase64String(LabelPng)))
                 throw new InvalidOperationException("Could not decode the DV_EET panel label");
             labelTexture.wrapMode = TextureWrapMode.Clamp;
-            labelMaterial = new Material(original[3]);
+            labelMaterial = CompatibleMaterial(original[3]);
             labelMaterial.name = "DV_EET_BrandedPanel";
             if (labelMaterial.HasProperty("_Color")) labelMaterial.color = Color.white;
-            if (labelMaterial.HasProperty("_MainTex")) labelMaterial.mainTexture = labelTexture;
-            Chrome = new Material(original[1]);
+            if (labelMaterial.HasProperty("_MainTex"))
+            {
+                labelMaterial.mainTexture = labelTexture;
+                // Unity's built-in cube UVs face the camera upside down on the front.
+                labelMaterial.mainTextureScale = new Vector2(-1f, -1f);
+                labelMaterial.mainTextureOffset = new Vector2(1f, 1f);
+            }
+            Chrome = CompatibleMaterial(original[1]);
             Chrome.name = "DV_EET_Chrome";
             if (Chrome.HasProperty("_Color")) Chrome.color = new Color(.72f, .75f, .78f);
             if (Chrome.HasProperty("_Metallic")) Chrome.SetFloat("_Metallic", .88f);
             if (Chrome.HasProperty("_Glossiness")) Chrome.SetFloat("_Glossiness", .78f);
         }
-        static void AddLooseToggle(GameObject root)
+        static GameObject Part(GameObject root, string name, PrimitiveType shape, Vector3 pos, Vector3 scale, Material material, Quaternion rotation)
         {
-            // A visible, non-interactable switch stays down while the item is loose.
-            var pivot = new GameObject("EET_LooseTogglePivot");
-            pivot.transform.SetParent(root.transform, false);
-            pivot.transform.localPosition = new Vector3(.135f, .19f, 0f);
-            pivot.transform.localRotation = Quaternion.Euler(0f, 0f, 180f);
-            pivot.layer = root.layer;
-            var mount = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            mount.name = "EET_LooseToggleMount";
-            mount.transform.SetParent(root.transform, false);
-            mount.transform.localPosition = new Vector3(.128f, .19f, 0f);
-            mount.transform.localScale = new Vector3(.016f, .035f, .035f);
-            mount.layer = root.layer;
-            var lever = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            lever.name = "EET_LooseToggleLever";
-            lever.transform.SetParent(pivot.transform, false);
-            lever.transform.localPosition = new Vector3(0f, .025f, 0f);
-            lever.transform.localScale = new Vector3(.012f, .025f, .012f);
-            lever.layer = root.layer;
-            foreach (var part in new[] { mount, lever })
-            {
-                var collider = part.GetComponent<Collider>();
-                if (collider != null) { collider.enabled = false; UnityEngine.Object.Destroy(collider); }
-                part.GetComponent<Renderer>().sharedMaterial = Chrome;
-            }
+            var part = GameObject.CreatePrimitive(shape);
+            part.name = name; part.layer = root.layer;
+            part.transform.SetParent(root.transform, false);
+            part.transform.localPosition = pos; part.transform.localScale = scale;
+            part.transform.localRotation = rotation;
+            var collider = part.GetComponent<Collider>();
+            if (collider != null) { collider.enabled = false; UnityEngine.Object.Destroy(collider); }
+            part.GetComponent<Renderer>().sharedMaterial = material;
+            return part;
+        }
+        internal static void AddToggleAppearance(GameObject parent, bool loose)
+        {
+            var mount = Part(parent, loose ? "EET_LooseToggleMount" : "EET_ToggleMount", PrimitiveType.Cylinder,
+                Vector3.zero, new Vector3(.025f,.004f,.025f), Chrome, Quaternion.Euler(0,0,90));
+            var pivot = new GameObject(loose ? "EET_LooseTogglePivot" : "EET_ToggleLeverPivot");
+            pivot.layer = parent.layer; pivot.transform.SetParent(parent.transform, false);
+            pivot.transform.localPosition = new Vector3(.006f,0,0);
+            pivot.transform.localRotation = Quaternion.Euler(0,0,loose ? -35f : 35f);
+            Part(pivot, loose ? "EET_LooseToggleLever" : "EET_ToggleLever", PrimitiveType.Cylinder,
+                new Vector3(.021f,0,0), new Vector3(.009f,.021f,.009f), Chrome, Quaternion.Euler(0,0,90));
+            Part(pivot, loose ? "EET_LooseToggleTip" : "EET_ToggleTip", PrimitiveType.Sphere,
+                new Vector3(.042f,0,0), new Vector3(.012f,.012f,.012f), Chrome, Quaternion.identity);
         }
         internal static void Replace(GameObject root)
         {
             if (root == null) return;
-            foreach (var child in root.GetComponentsInChildren<Transform>(true))
-                if (child.name == "EET_RedLens") return;
+            foreach (var child in root.GetComponentsInChildren<Transform>(true)) if (child.name == "EET_RedLens") return;
             var original = root.GetComponentInChildren<MeshFilter>(true);
-            if (original == null || original.sharedMesh == null)
-                throw new InvalidOperationException("DV_EET original mesh not found");
+            if (original == null || original.sharedMesh == null) throw new InvalidOperationException("DV_EET original mesh not found");
             var renderer = original.GetComponent<MeshRenderer>();
-            if (renderer == null || renderer.sharedMaterials.Length < 5)
-                throw new InvalidOperationException("DV_EET material slots not found");
+            if (renderer == null || renderer.sharedMaterials.Length < 5) throw new InvalidOperationException("DV_EET material slots not found");
             var materials = renderer.sharedMaterials;
-            EnsureMeshes();
-            original.sharedMesh = body;
             EnsureMaterials(materials);
-            renderer.sharedMaterials = new[] { yellowMaterial, Chrome, materials[2], labelMaterial };
-            var lensObject = new GameObject("EET_RedLens");
-            lensObject.transform.SetParent(original.transform, false);
-            lensObject.layer = original.gameObject.layer;
-            lensObject.AddComponent<MeshFilter>().sharedMesh = lens;
-            lensObject.AddComponent<MeshRenderer>().sharedMaterial = materials[4];
-            AddLooseToggle(root);
+            if (reflectorMaterial == null)
+            {
+                reflectorMaterial = CompatibleMaterial(materials[4]);
+                reflectorMaterial.name = "DV_EET_RedReflector";
+                if (reflectorMaterial.HasProperty("_Color")) reflectorMaterial.color = new Color(.8f, .015f, .015f);
+                if (reflectorMaterial.HasProperty("_Metallic")) reflectorMaterial.SetFloat("_Metallic", .55f);
+                if (reflectorMaterial.HasProperty("_Glossiness")) reflectorMaterial.SetFloat("_Glossiness", .9f);
+                reflectorMaterial.DisableKeyword("_EMISSION");
+                if (reflectorMaterial.HasProperty("_EmissionColor")) reflectorMaterial.SetColor("_EmissionColor", Color.black);
+            }
+            original.sharedMesh = null; renderer.enabled = false;
+            var q = Quaternion.identity;
+            // Back remains +Z at the existing attachment origin. The lamp faces -Z.
+            Part(root,"EET_Case",PrimitiveType.Cube,new Vector3(0,.245f,0),new Vector3(.18f,.31f,.14f),yellowMaterial,q);
+            Part(root,"EET_Cap",PrimitiveType.Cube,new Vector3(0,.41f,0),new Vector3(.195f,.025f,.15f),yellowMaterial,q);
+            Part(root,"EET_Base",PrimitiveType.Cube,new Vector3(0,.055f,0),new Vector3(.145f,.07f,.135f),Chrome,q);
+            Part(root,"EET_BaseCollar",PrimitiveType.Cube,new Vector3(0,.095f,0),new Vector3(.17f,.015f,.14f),yellowMaterial,q);
+            Part(root,"EET_LampHousing",PrimitiveType.Cube,new Vector3(0,.325f,-.083f),new Vector3(.14f,.115f,.032f),yellowMaterial,q);
+            Part(root,"EET_RedLens",PrimitiveType.Cube,new Vector3(0,.325f,-.102f),new Vector3(.105f,.075f,.008f),CompatibleMaterial(materials[4]),q);
+            Part(root,"EET_ReflectorFrame",PrimitiveType.Cube,new Vector3(0,.18f,-.074f),new Vector3(.12f,.125f,.012f),yellowMaterial,q);
+            Part(root,"EET_Reflector",PrimitiveType.Cube,new Vector3(0,.18f,-.082f),new Vector3(.09f,.105f,.006f),reflectorMaterial,q);
+            Part(root,"EET_Label",PrimitiveType.Cube,new Vector3(0,.105f,-.074f),new Vector3(.105f,.018f,.005f),labelMaterial,q);
+            Part(root,"EET_TopPostBase",PrimitiveType.Cylinder,new Vector3(0,.426f,0),new Vector3(.043f,.005f,.043f),Chrome,q);
+            Part(root,"EET_TopPost",PrimitiveType.Cylinder,new Vector3(0,.445f,0),new Vector3(.022f,.018f,.022f),Chrome,q);
+            var sw = new GameObject("EET_LooseToggleRoot"); sw.layer=root.layer; sw.transform.SetParent(root.transform,false);
+            sw.transform.localPosition = new Vector3(.092f,.23f,0);
+            AddToggleAppearance(sw, true);
         }
     }
 }
-
-
-
-
